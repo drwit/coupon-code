@@ -6,74 +6,64 @@
 #include "mongo/client/dbclient.h"
 #include "mongo/bson/bson.h"
 
-#define MAXLINE 256
-
 using namespace std;
 using namespace mongo;
-using namespace bson;
 
-void dealSet(string cmd, DBClientConnection& conn);
+void dealSet(string cmd, string& code, string& option);
 void dealCheck(string cmd, DBClientConnection& conn);
 
 int main(void)
 {
 	cout << "Welcome." << endl;
-	string cmd;
-	char buffer[MAXLINE];
+
 	DBClientConnection conn;
+	string option;
+	string code;
+	string cmd;
 
 	conn.connect("localhost");
 
 	while(1){
 		cout << "> ";
-		cin.getline(buffer,MAXLINE);
-		buffer[MAXLINE] = '\0';
-		cmd = buffer;
+		getline(cin, cmd);
 
 		if(cmd.substr(0,4) == "quit"){
-			return 0;
-		}else if(cmd.substr(0,5) == "check"){
-			//todo	
-			dealCheck(cmd, conn);	
-		}else if(cmd.substr(0,3) == "set"){
-			//todo
-			dealSet(cmd, conn);
-		}else{
-			cout << "synax error!" << endl;
+				return 0;
+        }else if(cmd.substr(0,5) == "check"){
+
+			dealCheck(cmd,conn);
+	    }else if(cmd.substr(0,3) == "set"){
+	        dealSet(cmd, code, option);
+			//cout << code << option;
+
+			if(option == "-n" || option == "-N")
+	            conn.update("HXTBBH.coupon", BSON("code" << code), BSON("$set" << BSON("status" << "unused")));
+	        else if(option == "-y" || option == "-Y")
+	            conn.update("HXTBBH.coupon", BSON("code" << code), BSON("$set" << BSON("status" << "used")));
+	    }else{
+				cout << "synax error!" << endl;
 		}
-	}	
-
-	return 0;
+	}
+	    return 0;
 }
 
 
-void dealSet(string cmd, DBClientConnection& conn)
+void dealSet(string cmd, string& code, string& option)
 {
-	int index = 4;
-	BSONObj p;
-	if(cmd[index] == ' ')
-			index ++;
-	
-	string code = cmd.substr(index, 9);
-	cout << code << endl;
-	index += 10;
-	if(cmd[index] == ' ')
-		index ++;
-	
-	string option = cmd.substr(index,2);
-	cout << option << endl;
+    int index = 4;
+    if(cmd[index] == ' ')
+        index ++;
 
-	Query query = QUERY("code" << code);
+    code = cmd.substr(index, 9);
+					    
+    index += 10;
 
-	if(option == "-n" || option == "-N")
-		conn.update(	"HXTBBH.coupon", 
-						query,
-					   	BSON("$set" << BSON("status" << "unused")),false,true);
-	else if(option == "-y" || option == "-Y")
-		conn.update(	"HXTBBH.coupon", 
-						query, 
-						BSON("$set" << BSON("status" << "used")),false,true);
+	if(cmd[index] == ' ')
+        index ++;
+	option = cmd.substr(index,2);
+
 }
+
 void dealCheck(string cmd, DBClientConnection& conn)
 {
 	int index = 6;
@@ -81,14 +71,12 @@ void dealCheck(string cmd, DBClientConnection& conn)
 
 	if(cmd[index] == ' ')
 		index ++;
-	
-	//cout << cmd << endl;	
+		//cout << cmd << endl;  
 	string code = cmd.substr(index, 9);
-	cout << code << endl;
-
+	//cout << code << endl;
 	auto_ptr<DBClientCursor> cursor = conn.query("HXTBBH.coupon",BSON("code" << code));
 	
 	if(cursor->more())
-		p = cursor->next();
+	p = cursor->next();
 	cout << p.getStringField("status") << endl;
-}
+}                                                                                  
